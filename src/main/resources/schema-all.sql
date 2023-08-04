@@ -1,0 +1,6 @@
+DROP TABLE line IF EXISTS;
+
+CREATE TABLE line  (
+    line_id BIGINT IDENTITY NOT NULL PRIMARY KEY,
+    text VARCHAR(255)
+);
