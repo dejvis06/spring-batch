@@ -5,9 +5,7 @@ import com.example.core.batch.processors.TaxonomicProcessor;
 import com.example.core.batch.readers.TaxonomicReader;
 import com.example.core.batch.writters.TaxonomicWritter;
 import com.example.core.domain.entities.TaxonomicAssessment;
-import com.example.core.domain.models.taxonomic.TaxonomicInput;
 import com.example.core.domain.models.taxonomic.TaxonomicModel;
-import com.example.core.domain.models.taxonomic.TaxonomicTarget;
 import com.example.core.domain.repositories.CustomRepositoryFactory;
 import com.example.rest.dto.JobExecutionDTO;
 import com.example.rest.dto.job.InputData;
@@ -33,12 +31,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.example.core.domain.repositories.CustomRepositoryFactory.Type.JOB_EXECUTION;
+import static com.example.core.services.Mapper.*;
 
 @RestController
 @RequestMapping("/jobexecutions")
@@ -112,46 +109,4 @@ public class JobExecutionController {
 
         return new PageImpl<>(jobExecutionDTOS);
     }
-
-    private static JobExecutionDTO buildJobExecutionDTO(JobExecution type) {
-        JobExecution jobExecution = type;
-
-        LocalDateTime startTime = null;
-        if (jobExecution.getStartTime() != null) {
-            startTime = LocalDateTime.ofInstant(jobExecution.getStartTime().toInstant(),
-                    ZoneId.systemDefault());
-        }
-        LocalDateTime endTime = null;
-        if (jobExecution.getEndTime() != null) {
-            endTime = LocalDateTime.ofInstant(jobExecution.getEndTime().toInstant(),
-                    ZoneId.systemDefault());
-        }
-
-        return JobExecutionDTO.builder()
-                .id(jobExecution.getId())
-                .fileName(type.getJobInstance().getJobName())
-                .status(jobExecution.getStatus().toString())
-                .startTime(startTime)
-                .endTime(endTime)
-                .build();
-    }
-
-    private TaxonomicInput buildTaxonomicInput(InputData inputData) {
-        return TaxonomicInput.builder()
-                .dataset(inputData.getDataset())
-                .csv(inputData.getCsv())
-                .rowDelimiter(inputData.getRowDelimiter())
-                .columnDelimiter(inputData.getColumnDelimiter())
-                .build();
-    }
-
-    private TaxonomicTarget buildTaxonomicTarget(TargetData targetData) {
-        return TaxonomicTarget.builder()
-                .domain(targetData.getDomain())
-                .environment(targetData.getEnvironment())
-                .taxonomicBackbone(targetData.getTaxonomicBackbone())
-                .rules(targetData.getRules())
-                .build();
-    }
-
 }
