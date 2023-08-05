@@ -1,5 +1,6 @@
 package com.example.rest.controllers;
 
+import com.example.common.exceptions.TypeNotFoundException;
 import com.example.core.domain.models.taxonomic.TaxonomicInput;
 import com.example.core.domain.models.taxonomic.TaxonomicTarget;
 import com.example.core.services.IJobExecutionService;
@@ -44,7 +45,7 @@ public class JobExecutionController {
     }
 
     @GetMapping
-    public Page<JobExecutionDTO> findAll(Pageable pageable) throws Exception {
+    public Page<JobExecutionDTO> findAll(Pageable pageable) throws TypeNotFoundException {
         return new PageImpl<>(jobExecutionService.findAll(pageable)
                 .stream()
                 .map(type -> buildJobExecutionDTO((JobExecution) type))
