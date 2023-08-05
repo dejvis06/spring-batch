@@ -80,7 +80,7 @@ public class JobExecutionController {
 
         beanFactory.registerBean(jobDTO.getJobName(), Job.class, () -> job);
         Job temp = beanFactory.getBean(jobDTO.getJobName(), Job.class);
-        log.info("Registered job bean in the application context: {}", temp.toString());
+        log.info("Registered job bean in the application context: {}", temp);
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("file_name", jobDTO.getJobName())
