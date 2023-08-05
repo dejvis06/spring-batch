@@ -6,14 +6,13 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.repository.dao.AbstractJdbcBatchMetadataDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 public class JobExecutionCustomRepository extends AbstractJdbcBatchMetadataDao implements ICustomRepository<JobExecution, Long> {
 
@@ -28,11 +27,11 @@ public class JobExecutionCustomRepository extends AbstractJdbcBatchMetadataDao i
     }
 
     @Override
-    public Page<JobExecution> findAll(Pageable pageable) {
+    public List<JobExecution> findAll(Pageable pageable) {
         String limit = String.valueOf(pageable.getPageSize());
         String offset = String.valueOf(pageable.getOffset());
 
-        return new PageImpl<>(this.getJdbcTemplate().query(this.getQuery(FIND_JOB_EXECUTIONS_PAGEABLE), new Object[]{limit, offset}, new JobExecutionRowMapper()));
+        return this.getJdbcTemplate().query(this.getQuery(FIND_JOB_EXECUTIONS_PAGEABLE), new Object[]{limit, offset}, new JobExecutionRowMapper());
     }
 
     private final class JobExecutionRowMapper implements RowMapper<JobExecution> {
