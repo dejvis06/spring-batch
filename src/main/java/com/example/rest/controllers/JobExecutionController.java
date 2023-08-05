@@ -8,6 +8,8 @@ import com.example.core.domain.entities.TaxonomicAssessment;
 import com.example.core.domain.models.taxonomic.TaxonomicInput;
 import com.example.core.domain.models.taxonomic.TaxonomicModel;
 import com.example.core.domain.models.taxonomic.TaxonomicTarget;
+import com.example.core.domain.repositories.CustomRepositoryFactory;
+import com.example.rest.dto.JobExecutionDTO;
 import com.example.rest.dto.job.InputData;
 import com.example.rest.dto.job.JobDTO;
 import com.example.rest.dto.job.TargetData;
@@ -22,14 +24,21 @@ import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionManager;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.example.core.domain.repositories.CustomRepositoryFactory.Type.JOB_EXECUTION;
 
 @RestController
 @RequestMapping("/jobexecutions")
@@ -41,17 +50,19 @@ public class JobExecutionController {
     private final JobInstanceDao jobInstanceDao;
     private final JobExecutionDao jobExecutionDao;
     private final GenericApplicationContext beanFactory;
+    private final CustomRepositoryFactory customRepositoryFactory;
 
-    public JobExecutionController(TransactionManager transactionManager, JobRepository jobRepository, JobInstanceDao jobInstanceDao, JobExecutionDao jobExecutionDao, GenericApplicationContext beanFactory) {
+    public JobExecutionController(TransactionManager transactionManager, JobRepository jobRepository, JobInstanceDao jobInstanceDao, JobExecutionDao jobExecutionDao, GenericApplicationContext beanFactory, CustomRepositoryFactory customRepositoryFactory) {
         this.transactionManager = transactionManager;
         this.jobRepository = jobRepository;
         this.jobInstanceDao = jobInstanceDao;
         this.jobExecutionDao = jobExecutionDao;
         this.beanFactory = beanFactory;
+        this.customRepositoryFactory = customRepositoryFactory;
     }
 
     @PostMapping
-    public ResponseEntity<HttpStatus> create(@RequestBody JobDTO jobDTO) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException {
+    public ResponseEntity<HttpStatus> save(@RequestBody JobDTO jobDTO) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException {
         log.info("Creating job with parameters: {}", jobDTO);
 
         InputData inputData = jobDTO.getInputData();
@@ -79,8 +90,8 @@ public class JobExecutionController {
                 .build();
 
         beanFactory.registerBean(jobDTO.getJobName(), Job.class, () -> job);
-        Job temp = beanFactory.getBean(jobDTO.getJobName(), Job.class);
-        log.info("Registered job bean in the application context: {}", temp);
+        Job verificationObject = beanFactory.getBean(jobDTO.getJobName(), Job.class);
+        log.info("Registered job bean in the application context: {}", verificationObject);
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("file_name", jobDTO.getJobName())
@@ -90,6 +101,39 @@ public class JobExecutionController {
         log.info("Created job instance: {}", jobInstanceDao.getJobInstance(jobExecution));
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping
+    public Page<JobExecutionDTO> findAll(Pageable pageable) throws Exception {
+        List<JobExecutionDTO> jobExecutionDTOS = (List<JobExecutionDTO>) customRepositoryFactory.getRepository(JOB_EXECUTION).findAll(pageable)
+                .stream()
+                .map(type -> buildJobExecutionDTO((JobExecution) type))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(jobExecutionDTOS);
+    }
+
+    private static JobExecutionDTO buildJobExecutionDTO(JobExecution type) {
+        JobExecution jobExecution = type;
+
+        LocalDateTime startTime = null;
+        if (jobExecution.getStartTime() != null) {
+            startTime = LocalDateTime.ofInstant(jobExecution.getStartTime().toInstant(),
+                    ZoneId.systemDefault());
+        }
+        LocalDateTime endTime = null;
+        if (jobExecution.getEndTime() != null) {
+            endTime = LocalDateTime.ofInstant(jobExecution.getEndTime().toInstant(),
+                    ZoneId.systemDefault());
+        }
+
+        return JobExecutionDTO.builder()
+                .id(jobExecution.getId())
+                .fileName(type.getJobInstance().getJobName())
+                .status(jobExecution.getStatus().toString())
+                .startTime(startTime)
+                .endTime(endTime)
+                .build();
     }
 
     private TaxonomicInput buildTaxonomicInput(InputData inputData) {
