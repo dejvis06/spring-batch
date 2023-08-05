@@ -1,5 +1,6 @@
 package com.example.rest.controllers;
 
+import com.example.common.exceptions.TypeNotFoundException;
 import com.example.common.utils.ErrorResponse;
 import com.example.common.utils.StackTraceUtil;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -12,8 +13,8 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(value = {RuntimeException.class})
-    ErrorResponse badRequest(RuntimeException ex) {
+    @ExceptionHandler(value = {Exception.class, TypeNotFoundException.class})
+    ErrorResponse badRequest(Exception ex) {
 
         return ErrorResponse.builder()
                 .status(INTERNAL_SERVER_ERROR.value())
