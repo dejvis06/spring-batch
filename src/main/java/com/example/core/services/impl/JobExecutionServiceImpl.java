@@ -84,7 +84,7 @@ public class JobExecutionServiceImpl implements IJobExecutionService {
 
         JobExecution jobExecution = jobRepository.createJobExecution(jobName, jobParameters);
         log.info("Created job instance: {}", jobInstanceDao.getJobInstance(jobExecution));
-
+        log.info("Created job execution: {}", jobExecution);
         return jobExecution;
     }
 
