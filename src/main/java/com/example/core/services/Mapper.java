@@ -12,8 +12,7 @@ import java.time.ZoneId;
 
 public class Mapper {
 
-    public static JobExecutionDTO buildJobExecutionDTO(JobExecution type) {
-        JobExecution jobExecution = type;
+    public static JobExecutionDTO buildJobExecutionDTO(JobExecution jobExecution) {
 
         LocalDateTime startTime = null;
         if (jobExecution.getStartTime() != null) {
@@ -28,7 +27,7 @@ public class Mapper {
 
         return JobExecutionDTO.builder()
                 .id(jobExecution.getId())
-                .fileName(type.getJobInstance().getJobName())
+                .fileName(jobExecution.getJobInstance().getJobName())
                 .status(jobExecution.getStatus().toString())
                 .startTime(startTime)
                 .endTime(endTime)
