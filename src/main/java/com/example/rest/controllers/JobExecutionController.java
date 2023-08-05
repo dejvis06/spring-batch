@@ -1,40 +1,24 @@
 package com.example.rest.controllers;
 
-import com.example.core.batch.listeners.TaxonomicListener;
-import com.example.core.batch.processors.TaxonomicProcessor;
-import com.example.core.batch.readers.TaxonomicReader;
-import com.example.core.batch.writters.TaxonomicWritter;
-import com.example.core.domain.entities.TaxonomicAssessment;
-import com.example.core.domain.models.taxonomic.TaxonomicModel;
-import com.example.core.domain.repositories.CustomRepositoryFactory;
+import com.example.core.domain.models.taxonomic.TaxonomicInput;
+import com.example.core.domain.models.taxonomic.TaxonomicTarget;
+import com.example.core.services.IJobExecutionService;
+import com.example.core.services.Mapper;
 import com.example.rest.dto.JobExecutionDTO;
-import com.example.rest.dto.job.InputData;
 import com.example.rest.dto.job.JobDTO;
-import com.example.rest.dto.job.TargetData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
-import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
-import org.springframework.batch.core.repository.dao.JobExecutionDao;
-import org.springframework.batch.core.repository.dao.JobInstanceDao;
-import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionManager;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.example.core.domain.repositories.CustomRepositoryFactory.Type.JOB_EXECUTION;
 import static com.example.core.services.Mapper.*;
 
 @RestController
@@ -42,71 +26,28 @@ import static com.example.core.services.Mapper.*;
 @Slf4j
 public class JobExecutionController {
 
-    private final TransactionManager transactionManager;
-    private final JobRepository jobRepository;
-    private final JobInstanceDao jobInstanceDao;
-    private final JobExecutionDao jobExecutionDao;
-    private final GenericApplicationContext beanFactory;
-    private final CustomRepositoryFactory customRepositoryFactory;
+    private final IJobExecutionService jobExecutionService;
 
-    public JobExecutionController(TransactionManager transactionManager, JobRepository jobRepository, JobInstanceDao jobInstanceDao, JobExecutionDao jobExecutionDao, GenericApplicationContext beanFactory, CustomRepositoryFactory customRepositoryFactory) {
-        this.transactionManager = transactionManager;
-        this.jobRepository = jobRepository;
-        this.jobInstanceDao = jobInstanceDao;
-        this.jobExecutionDao = jobExecutionDao;
-        this.beanFactory = beanFactory;
-        this.customRepositoryFactory = customRepositoryFactory;
+    public JobExecutionController(IJobExecutionService jobExecutionService) {
+        this.jobExecutionService = jobExecutionService;
     }
 
     @PostMapping
-    public ResponseEntity<HttpStatus> save(@RequestBody JobDTO jobDTO) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException {
+    public ResponseEntity<JobExecutionDTO> save(@RequestBody JobDTO jobDTO) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException {
         log.info("Creating job with parameters: {}", jobDTO);
 
-        InputData inputData = jobDTO.getInputData();
-        TargetData targetData = jobDTO.getTargetData();
+        TaxonomicInput taxonomicInput = buildTaxonomicInput(jobDTO.getInputData());
+        TaxonomicTarget taxonomicTarget = buildTaxonomicTarget(jobDTO.getTargetData());
 
-        TaxonomicReader taxonomicReader = new TaxonomicReader(buildTaxonomicInput(inputData));
-        TaxonomicProcessor taxonomicProcessor = new TaxonomicProcessor(buildTaxonomicTarget(targetData));
-        TaxonomicWritter taxonomicWritter = new TaxonomicWritter();
-
-        Step step = new StepBuilder(jobDTO.getJobName() + "_step")
-                .repository(jobRepository)
-                .transactionManager((PlatformTransactionManager) transactionManager)
-                .<TaxonomicModel, TaxonomicAssessment>chunk(1)
-                .reader(taxonomicReader)
-                .processor(taxonomicProcessor)
-                .writer(taxonomicWritter)
-                .build();
-
-        TaxonomicListener taxonomicListener = new TaxonomicListener();
-
-        Job job = new JobBuilder(jobDTO.getJobName())
-                .repository(jobRepository)
-                .listener(taxonomicListener)
-                .start(step)
-                .build();
-
-        beanFactory.registerBean(jobDTO.getJobName(), Job.class, () -> job);
-        Job verificationObject = beanFactory.getBean(jobDTO.getJobName(), Job.class);
-        log.info("Registered job bean in the application context: {}", verificationObject);
-
-        JobParameters jobParameters = new JobParametersBuilder()
-                .addString("file_name", jobDTO.getJobName())
-                .toJobParameters();
-
-        JobExecution jobExecution = jobRepository.createJobExecution(jobDTO.getJobName(), jobParameters);
-        log.info("Created job instance: {}", jobInstanceDao.getJobInstance(jobExecution));
-
-        return new ResponseEntity<>(HttpStatus.OK);
+        JobExecution jobExecution = jobExecutionService.save(jobDTO.getJobName(), taxonomicInput, taxonomicTarget);
+        return ResponseEntity.ok(Mapper.buildJobExecutionDTO(jobExecution));
     }
 
     @GetMapping
     public Page<JobExecutionDTO> findAll(Pageable pageable) throws Exception {
-        List<JobExecutionDTO> jobExecutionDTOS = (List<JobExecutionDTO>) customRepositoryFactory.getRepository(JOB_EXECUTION).findAll(pageable)
+        return new PageImpl<>(jobExecutionService.findAll(pageable)
                 .stream()
                 .map(type -> buildJobExecutionDTO((JobExecution) type))
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(jobExecutionDTOS);
+                .collect(Collectors.toList()));
     }
 }
