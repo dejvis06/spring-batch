@@ -1,6 +1,6 @@
 package com.example.core.services;
 
-public interface IJobService {
+public interface IJobExecutionService {
 
 
 }
