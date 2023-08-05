@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.LocalDateTime;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
     ErrorResponse badRequest(RuntimeException ex) {
 
         return ErrorResponse.builder()
-                .status(BAD_REQUEST.value())
+                .status(INTERNAL_SERVER_ERROR.value())
                 .error(ex.getMessage())
                 .trace(StackTraceUtil.getStackTrace(ex))
                 .timestamp(LocalDateTime.now())
