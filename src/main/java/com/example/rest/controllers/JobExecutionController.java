@@ -44,7 +44,7 @@ public class JobExecutionController {
     }
 
     @PostMapping
-    public ResponseEntity<JobExecutionDTO> save(@RequestBody JobDTO jobDTO, @RequestParam Long jobExecutionId) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException, TypeNotFoundException, DuplicateJobException {
+    public ResponseEntity<JobExecutionDTO> save(@RequestBody JobDTO jobDTO, @RequestParam(required = false) Long jobExecutionId) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException, TypeNotFoundException, DuplicateJobException {
         log.info("Received job with parameters: {}", jobDTO);
 
         TaxonomicInput taxonomicInput = buildTaxonomicInput(jobDTO.getInputData());
