@@ -62,7 +62,7 @@ public class JobExecutionController {
                 .collect(Collectors.toList()));
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<String> control(@RequestParam String fileName, @RequestParam String action, @PathVariable Long id) throws ActionNotFoundException, NoSuchJobExecutionException, JobExecutionNotRunningException, JobInstanceAlreadyCompleteException, NoSuchJobException, JobParametersInvalidException, JobRestartException, JobExecutionAlreadyRunningException {
 
         BatchStatus status;
@@ -91,7 +91,7 @@ public class JobExecutionController {
         return ResponseEntity.ok(status.toString());
     }
 
-    public enum Action {
+    private enum Action {
         LAUNCH,
         STOP,
         RESTART
