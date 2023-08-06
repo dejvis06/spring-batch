@@ -13,15 +13,17 @@ import com.example.core.domain.repositories.CustomRepositoryFactory;
 import com.example.core.services.IJobExecutionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.configuration.DuplicateJobException;
+import org.springframework.batch.core.configuration.JobFactory;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.configuration.support.ReferenceJobFactory;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
-import org.springframework.batch.core.repository.dao.JobExecutionDao;
 import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -38,21 +40,19 @@ public class JobExecutionServiceImpl implements IJobExecutionService {
     private final TransactionManager transactionManager;
     private final JobRepository jobRepository;
     private final JobInstanceDao jobInstanceDao;
-    private final JobExecutionDao jobExecutionDao;
-    private final GenericApplicationContext beanFactory;
     private final CustomRepositoryFactory customRepositoryFactory;
+    private final JobRegistry jobRegistry;
 
-    public JobExecutionServiceImpl(TransactionManager transactionManager, JobRepository jobRepository, JobInstanceDao jobInstanceDao, JobExecutionDao jobExecutionDao, GenericApplicationContext beanFactory, CustomRepositoryFactory customRepositoryFactory) {
+    public JobExecutionServiceImpl(TransactionManager transactionManager, JobRepository jobRepository, JobInstanceDao jobInstanceDao, CustomRepositoryFactory customRepositoryFactory, JobRegistry jobRegistry) {
         this.transactionManager = transactionManager;
         this.jobRepository = jobRepository;
         this.jobInstanceDao = jobInstanceDao;
-        this.jobExecutionDao = jobExecutionDao;
-        this.beanFactory = beanFactory;
         this.customRepositoryFactory = customRepositoryFactory;
+        this.jobRegistry = jobRegistry;
     }
 
     @Override
-    public JobExecution save(String jobName, TaxonomicInput inputData, TaxonomicTarget targetData) throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
+    public JobExecution save(String jobName, TaxonomicInput inputData, TaxonomicTarget targetData, Long id) throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, TypeNotFoundException, DuplicateJobException {
         TaxonomicReader taxonomicReader = new TaxonomicReader(inputData);
         TaxonomicProcessor taxonomicProcessor = new TaxonomicProcessor(targetData);
         TaxonomicWritter taxonomicWritter = new TaxonomicWritter();
@@ -74,17 +74,31 @@ public class JobExecutionServiceImpl implements IJobExecutionService {
                 .start(step)
                 .build();
 
-        beanFactory.registerBean(jobName, Job.class, () -> job);
-        Job verificationObject = beanFactory.getBean(jobName, Job.class);
-        log.info("Registered job bean in the application context: {}", verificationObject);
-
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("file_name", jobName)
                 .toJobParameters();
 
-        JobExecution jobExecution = jobRepository.createJobExecution(jobName, jobParameters);
-        log.info("Created job instance: {}", jobInstanceDao.getJobInstance(jobExecution));
-        log.info("Created job execution: {}", jobExecution);
+        JobExecution jobExecution = null;
+        if (id == null) {
+
+            // TODO: replace jobRegistry impl with custom component
+            JobFactory jobFactory = new ReferenceJobFactory(job);
+            jobRegistry.register(jobFactory);
+
+            jobExecution = jobRepository.createJobExecution(jobName, jobParameters);
+            log.info("Created job instance: {}", jobInstanceDao.getJobInstance(jobExecution));
+            log.info("Created job execution: {}", jobExecution);
+        } else {
+
+            // TODO: replace jobRegistry impl with custom component
+            jobRegistry.unregister(jobName);
+            JobFactory jobFactory = new ReferenceJobFactory(job);
+            jobRegistry.register(jobFactory);
+
+            jobExecution = (JobExecution) customRepositoryFactory.getRepository(JOB_EXECUTION).find(id);
+            log.info("Found job execution: {}", jobExecution);
+        }
+
         return jobExecution;
     }
 
