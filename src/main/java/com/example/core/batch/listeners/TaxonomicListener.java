@@ -14,8 +14,12 @@ public class TaxonomicListener implements JobExecutionListener {
 
     @Override
     public void afterJob(JobExecution jobExecution) {
-        if (jobExecution.getStatus().equals(BatchStatus.COMPLETED)) {
+        BatchStatus status = jobExecution.getStatus();
+
+        if (status.equals(BatchStatus.COMPLETED)) {
             log.info("Successfully completed job: {}", jobExecution);
+        } else if (status.equals(BatchStatus.STOPPED)) {
+            log.info("Successfully stopped job: {}", jobExecution);
         }
     }
 }
