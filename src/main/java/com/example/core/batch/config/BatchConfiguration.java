@@ -1,13 +1,15 @@
 package com.example.core.batch.config;
 
+import com.example.core.services.impl.CustomJobLauncher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.configuration.ListableJobLocator;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.support.MapJobRegistry;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.JobOperator;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.dao.JdbcJobExecutionDao;
@@ -66,11 +68,16 @@ public class BatchConfiguration {
 
     @Bean
     public JobLauncher jobLauncher(JobRepository jobRepository) throws Exception {
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        CustomJobLauncher jobLauncher = new CustomJobLauncher();
         jobLauncher.setJobRepository(jobRepository);
         jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
         jobLauncher.afterPropertiesSet();
         return jobLauncher;
+    }
+
+    @Bean
+    public JobRegistry jobRegistry() {
+        return new MapJobRegistry();
     }
 
     /**
@@ -80,14 +87,19 @@ public class BatchConfiguration {
     @Bean
     public JobOperator jobOperator(JobExplorer jobExplorer,
                                    JobRepository jobRepository,
-                                   JobRegistry mapJobRegistry,
+                                   JobRegistry jobRegistry,
                                    JobLauncher jobLauncher) {
 
         SimpleJobOperator jobOperator = new SimpleJobOperator();
         jobOperator.setJobExplorer(jobExplorer);
         jobOperator.setJobRepository(jobRepository);
-        jobOperator.setJobRegistry(mapJobRegistry);
+        jobOperator.setJobRegistry(jobRegistry);
         jobOperator.setJobLauncher(jobLauncher);
         return jobOperator;
+    }
+
+    @Bean
+    public ListableJobLocator listableJobLocator() {
+        return new MapJobRegistry();
     }
 }
