@@ -97,9 +97,4 @@ public class BatchConfiguration {
         jobOperator.setJobLauncher(jobLauncher);
         return jobOperator;
     }
-
-    @Bean
-    public ListableJobLocator listableJobLocator() {
-        return new MapJobRegistry();
-    }
 }
