@@ -5,6 +5,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
 @Builder
+@ToString
 public class TaxonomicInput {
     private final String dataset;
     private final String csv;
