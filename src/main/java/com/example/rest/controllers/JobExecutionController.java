@@ -8,6 +8,7 @@ import com.example.core.services.IJobExecutionService;
 import com.example.core.services.Mapper;
 import com.example.rest.dto.JobExecutionDTO;
 import com.example.rest.dto.job.JobDTO;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.DuplicateJobException;
@@ -44,6 +45,7 @@ public class JobExecutionController {
     }
 
     @PostMapping
+    @Operation(summary = "Save or update", description = "Send id only on update")
     public ResponseEntity<JobExecutionDTO> save(@RequestBody JobDTO jobDTO, @RequestParam(required = false) Long jobExecutionId) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobRestartException, TypeNotFoundException, DuplicateJobException {
         log.info("Received job with parameters: {}", jobDTO);
 
@@ -55,6 +57,7 @@ public class JobExecutionController {
     }
 
     @GetMapping
+    @Operation(summary = "Find all by pagination")
     public Page<JobExecutionDTO> findAll(Pageable pageable) throws TypeNotFoundException {
         return new PageImpl<>(jobExecutionService.findAll(pageable)
                 .stream()
@@ -62,6 +65,7 @@ public class JobExecutionController {
                 .collect(Collectors.toList()));
     }
 
+    @Operation(summary = "Control job, start | stop | restart")
     @GetMapping("/control/{id}")
     public ResponseEntity<String> control(@RequestParam String fileName, @RequestParam Action action, @PathVariable Long id) throws ActionNotFoundException, NoSuchJobExecutionException, JobExecutionNotRunningException, JobInstanceAlreadyCompleteException, NoSuchJobException, JobParametersInvalidException, JobRestartException, JobExecutionAlreadyRunningException {
 
