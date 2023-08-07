@@ -63,10 +63,10 @@ public class JobExecutionController {
     }
 
     @GetMapping("/control/{id}")
-    public ResponseEntity<String> control(@RequestParam String fileName, @RequestParam String action, @PathVariable Long id) throws ActionNotFoundException, NoSuchJobExecutionException, JobExecutionNotRunningException, JobInstanceAlreadyCompleteException, NoSuchJobException, JobParametersInvalidException, JobRestartException, JobExecutionAlreadyRunningException {
+    public ResponseEntity<String> control(@RequestParam String fileName, @RequestParam Action action, @PathVariable Long id) throws ActionNotFoundException, NoSuchJobExecutionException, JobExecutionNotRunningException, JobInstanceAlreadyCompleteException, NoSuchJobException, JobParametersInvalidException, JobRestartException, JobExecutionAlreadyRunningException {
 
         BatchStatus status;
-        switch (Action.valueOf(action)) {
+        switch (action) {
             case LAUNCH:
                 Job job = jobRegistry.getJob(fileName);
                 JobParameters jobParameters = new JobParametersBuilder()
