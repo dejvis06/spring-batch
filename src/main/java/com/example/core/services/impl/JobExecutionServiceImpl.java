@@ -74,10 +74,6 @@ public class JobExecutionServiceImpl implements IJobExecutionService {
                 .start(step)
                 .build();
 
-        JobParameters jobParameters = new JobParametersBuilder()
-                .addString("file_name", jobName)
-                .toJobParameters();
-
         JobExecution jobExecution = null;
         if (id == null) {
 
@@ -85,7 +81,7 @@ public class JobExecutionServiceImpl implements IJobExecutionService {
             JobFactory jobFactory = new ReferenceJobFactory(job);
             jobRegistry.register(jobFactory);
 
-            jobExecution = jobRepository.createJobExecution(jobName, jobParameters);
+            jobExecution = jobRepository.createJobExecution(jobName, getJobParameters(jobName));
             log.info("Created job instance: {}", jobInstanceDao.getJobInstance(jobExecution));
             log.info("Created job execution: {}", jobExecution);
         } else {
@@ -100,6 +96,13 @@ public class JobExecutionServiceImpl implements IJobExecutionService {
         }
 
         return jobExecution;
+    }
+
+    @Override
+    public JobParameters getJobParameters(String jobName){
+        return new JobParametersBuilder()
+                .addString("file_name", jobName)
+                .toJobParameters();
     }
 
     @Override
