@@ -73,10 +73,7 @@ public class JobExecutionController {
         switch (action) {
             case LAUNCH:
                 Job job = jobRegistry.getJob(fileName);
-                JobParameters jobParameters = new JobParametersBuilder()
-                        .addString("file_name", fileName)
-                        .toJobParameters();
-                jobLauncher.run(job, jobParameters);
+                jobLauncher.run(job, jobExecutionService.getJobParameters(fileName));
                 status = BatchStatus.STARTED;
                 break;
 
