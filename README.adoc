@@ -77,8 +77,7 @@ Important to understand that spring batch uses these interfaces in the backgroun
 
 ===== Static Job's
 
-Check out the class _JobConfiguration_ This configuration class is only for demonstrative purposes. Check out the required beans to configure and create a job.
-Also Check out the logs on startup of the component //TODO
+Check out the class _JobConfiguration_. This configuration class is only for demonstrative purposes, it contains the required beans to configure and create a job.
 
 ==== Components
 
