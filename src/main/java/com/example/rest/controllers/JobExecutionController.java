@@ -129,7 +129,6 @@ public class JobExecutionController {
 
     private byte[] runExportJob(HttpServletResponse response) throws IOException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, InterruptedException {
         ExportState exportState = new ExportState(Arrays.asList(new Line("line 1"), new Line("line 2")));
-        byte[] bytes = null;
         Step step = new StepBuilder("taxon_download_step")
                 .repository(jobRepository)
                 .transactionManager((PlatformTransactionManager) transactionManager)
