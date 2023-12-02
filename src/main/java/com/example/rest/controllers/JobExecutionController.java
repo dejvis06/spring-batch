@@ -122,12 +122,12 @@ public class JobExecutionController {
 
     @Operation(summary = "export")
     @GetMapping(value = "/export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<byte[]> export(HttpServletResponse response) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, IOException, JobParametersInvalidException, JobRestartException, InterruptedException {
+    public ResponseEntity<byte[]> export() throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, IOException, JobParametersInvalidException, JobRestartException, InterruptedException {
         return ResponseEntity.ok()
-                .body(runExportJob(response));
+                .body(runExportJob());
     }
 
-    private byte[] runExportJob(HttpServletResponse response) throws IOException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, InterruptedException {
+    private byte[] runExportJob() throws IOException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, InterruptedException {
         ExportState exportState = new ExportState(Arrays.asList(new Line("line 1"), new Line("line 2")));
         // TODO change test_attribute
         final JobParameters jobParameters = new JobParametersBuilder()
