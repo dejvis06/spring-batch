@@ -45,6 +45,7 @@ public class ExportState {
     }
 
     public byte[] export() throws IOException {
+        // TODO study java concurrency and replace
         while (!this.isFinished()) {
         }
         return Files.readAllBytes(file.toPath());
