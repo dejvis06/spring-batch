@@ -2,10 +2,16 @@ package com.example.rest.controllers;
 
 import com.example.common.exceptions.ActionNotFoundException;
 import com.example.common.exceptions.TypeNotFoundException;
+import com.example.core.batch.listeners.ExportJobListener;
+import com.example.core.batch.processors.ExportItemProcessor;
+import com.example.core.batch.readers.ExportItemReader;
+import com.example.core.batch.writters.ExportItemWritter;
+import com.example.core.domain.entities.Line;
 import com.example.core.domain.models.taxonomic.TaxonomicInput;
 import com.example.core.domain.models.taxonomic.TaxonomicTarget;
 import com.example.core.services.IJobExecutionService;
 import com.example.core.services.Mapper;
+import com.example.rest.ExportState;
 import com.example.rest.dto.JobExecutionDTO;
 import com.example.rest.dto.job.JobDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,16 +19,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.DuplicateJobException;
 import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.*;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.batch.core.repository.dao.JobExecutionDao;
+import org.springframework.batch.core.repository.dao.JobInstanceDao;
+import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionManager;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.example.core.services.Mapper.*;
@@ -36,12 +55,20 @@ public class JobExecutionController {
     private final JobLauncher jobLauncher;
     private final JobOperator jobOperator;
     private final JobRegistry jobRegistry;
+    private final JobRepository jobRepository;
+    private final JobExecutionDao jobExecutionDao;
+    private final TransactionManager transactionManager;
+    private final JobInstanceDao jobInstanceDao;
 
-    public JobExecutionController(IJobExecutionService jobExecutionService, JobLauncher jobLauncher, JobOperator jobOperator, JobRegistry jobRegistry) {
+    public JobExecutionController(IJobExecutionService jobExecutionService, JobLauncher jobLauncher, JobOperator jobOperator, JobRegistry jobRegistry, JobRepository jobRepository, JobExecutionDao jobExecutionDao, TransactionManager transactionManager, JobInstanceDao jobInstanceDao) {
         this.jobExecutionService = jobExecutionService;
         this.jobLauncher = jobLauncher;
         this.jobOperator = jobOperator;
         this.jobRegistry = jobRegistry;
+        this.jobRepository = jobRepository;
+        this.jobExecutionDao = jobExecutionDao;
+        this.transactionManager = transactionManager;
+        this.jobInstanceDao = jobInstanceDao;
     }
 
     @PostMapping
@@ -90,6 +117,50 @@ public class JobExecutionController {
                 throw new ActionNotFoundException("Action not found!");
         }
         return ResponseEntity.ok(status.toString());
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "export")
+    public ResponseEntity<byte[]> export(HttpServletResponse response) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, IOException, JobParametersInvalidException, JobRestartException, InterruptedException {
+
+        return ResponseEntity.ok()
+                .body(runExportJob(response));
+    }
+
+    private byte[] runExportJob(HttpServletResponse response) throws IOException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, InterruptedException {
+        ExportState exportState = new ExportState(Arrays.asList(new Line("line 1"), new Line("line 2")));
+        byte[] bytes = null;
+        Step step = new StepBuilder("taxon_download_step")
+                .repository(jobRepository)
+                .transactionManager((PlatformTransactionManager) transactionManager)
+                .<Line, Line>chunk(1)
+                .reader(new ExportItemReader(exportState))
+                .processor(new ExportItemProcessor())
+                .writer(new ExportItemWritter(exportState.getCsvWriter()))
+                .build();
+
+        Job job = new JobBuilder("taxon_download")
+                .repository(jobRepository)
+                .listener(new ExportJobListener(exportState))
+                .start(step)
+                .build();
+
+        final JobParameters jobParameters = new JobParametersBuilder()
+                .addDate("date", new Date())
+                .addString("test_attribute", "test_value")
+                .toJobParameters();
+
+        this.jobRepository.createJobExecution("taxon_download", jobParameters);
+        jobLauncher.run(job, jobParameters);
+        Lock lock = new ReentrantLock();
+        try {
+            while (!exportState.isFinished()) {
+                lock.lock();  // block until condition holds
+            }
+        } finally {
+            lock.unlock();
+        }
+        return exportState.export();
     }
 
     private enum Action {
