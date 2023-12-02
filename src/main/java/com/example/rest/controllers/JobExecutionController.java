@@ -129,10 +129,9 @@ public class JobExecutionController {
 
     private byte[] runExportJob() throws IOException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, InterruptedException {
         ExportState exportState = new ExportState(Arrays.asList(new Line("line 1"), new Line("line 2")));
-        // TODO change test_attribute
+
         final JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("date", new Date())
-                .addString("test_attribute", "test_value")
                 .toJobParameters();
         Job job = configureJob(exportState);
 
