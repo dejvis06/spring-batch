@@ -136,16 +136,7 @@ public class JobExecutionController {
         Job job = configureJob(exportState);
 
         this.jobRepository.createJobExecution("taxon_download", jobParameters);
-        jobLauncher.run(job, jobParameters);
-
-        Lock lock = new ReentrantLock();
-        try {
-            while (!exportState.isFinished()) {
-                lock.lock();
-            }
-        } finally {
-            lock.unlock();
-        }
+        JobExecution execution = jobLauncher.run(job, jobParameters);
         return exportState.export();
     }
 

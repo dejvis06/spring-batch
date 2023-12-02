@@ -45,6 +45,8 @@ public class ExportState {
     }
 
     public byte[] export() throws IOException {
+        while (!this.isFinished()) {
+        }
         return Files.readAllBytes(file.toPath());
     }
 
