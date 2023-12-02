@@ -129,28 +129,16 @@ public class JobExecutionController {
 
     private byte[] runExportJob(HttpServletResponse response) throws IOException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, InterruptedException {
         ExportState exportState = new ExportState(Arrays.asList(new Line("line 1"), new Line("line 2")));
-        Step step = new StepBuilder("taxon_download_step")
-                .repository(jobRepository)
-                .transactionManager((PlatformTransactionManager) transactionManager)
-                .<Line, Line>chunk(1)
-                .reader(new ExportItemReader(exportState))
-                .processor(new ExportItemProcessor())
-                .writer(new ExportItemWritter(exportState.getCsvWriter()))
-                .build();
-
-        Job job = new JobBuilder("taxon_download")
-                .repository(jobRepository)
-                .listener(new ExportJobListener(exportState))
-                .start(step)
-                .build();
-
+        // TODO change test_attribute
         final JobParameters jobParameters = new JobParametersBuilder()
                 .addDate("date", new Date())
                 .addString("test_attribute", "test_value")
                 .toJobParameters();
+        Job job = configureJob(exportState);
 
         this.jobRepository.createJobExecution("taxon_download", jobParameters);
         jobLauncher.run(job, jobParameters);
+
         Lock lock = new ReentrantLock();
         try {
             while (!exportState.isFinished()) {
@@ -160,6 +148,23 @@ public class JobExecutionController {
             lock.unlock();
         }
         return exportState.export();
+    }
+
+    private Job configureJob(ExportState exportState) throws IOException {
+        Step step = new StepBuilder("taxon_download_step")
+                .repository(jobRepository)
+                .transactionManager((PlatformTransactionManager) transactionManager)
+                .<Line, Line>chunk(1)
+                .reader(new ExportItemReader(exportState))
+                .processor(new ExportItemProcessor())
+                .writer(new ExportItemWritter(exportState.getCsvWriter()))
+                .build();
+
+        return new JobBuilder("taxon_download")
+                .repository(jobRepository)
+                .listener(new ExportJobListener(exportState))
+                .start(step)
+                .build();
     }
 
     private enum Action {
