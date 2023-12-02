@@ -31,6 +31,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionManager;
@@ -119,10 +120,9 @@ public class JobExecutionController {
         return ResponseEntity.ok(status.toString());
     }
 
-    @GetMapping("/export")
     @Operation(summary = "export")
+    @GetMapping(value = "/export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<byte[]> export(HttpServletResponse response) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, IOException, JobParametersInvalidException, JobRestartException, InterruptedException {
-
         return ResponseEntity.ok()
                 .body(runExportJob(response));
     }
