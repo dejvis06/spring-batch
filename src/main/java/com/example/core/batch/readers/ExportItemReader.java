@@ -11,7 +11,7 @@ public class ExportItemReader implements ItemReader<Line> {
 
     private static final Logger log = LoggerFactory.getLogger(ExportJobListener.class);
 
-    private ExportState exportState;
+    private final ExportState exportState;
 
     public ExportItemReader(ExportState exportState) {
         this.exportState = exportState;

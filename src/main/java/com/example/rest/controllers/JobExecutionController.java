@@ -135,8 +135,8 @@ public class JobExecutionController {
                 .toJobParameters();
         Job job = configureJob(exportState);
 
-        this.jobRepository.createJobExecution("taxon_download", jobParameters);
-        JobExecution execution = jobLauncher.run(job, jobParameters);
+        jobRepository.createJobExecution("taxon_download", jobParameters);
+        jobLauncher.run(job, jobParameters);
         return exportState.export();
     }
 
