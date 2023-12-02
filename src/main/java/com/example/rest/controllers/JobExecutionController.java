@@ -137,6 +137,10 @@ public class JobExecutionController {
 
         jobRepository.createJobExecution("taxon_download", jobParameters);
         jobLauncher.run(job, jobParameters);
+
+        // TODO study java concurrency and replace
+        while (!exportState.isFinished()) {
+        }
         return exportState.export();
     }
 

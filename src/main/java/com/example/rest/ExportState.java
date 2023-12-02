@@ -7,12 +7,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
 public class ExportState {
     private static final String CSV_FILE_PATH
-            = "./result.csv";
+            = "./{date}-result.csv";
     private final Iterator<Line> items;
     private File file;
     private final CSVWriter csvWriter;
@@ -20,7 +21,7 @@ public class ExportState {
 
     public ExportState(List<Line> items) throws IOException {
         this.items = items.iterator();
-        this.file = new File(CSV_FILE_PATH);
+        this.file = new File(CSV_FILE_PATH.replace("{date}", new Date().toInstant().toString()));
         this.csvWriter = new CSVWriter(new FileWriter(this.file), ';',
                 CSVWriter.NO_QUOTE_CHARACTER,
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
@@ -45,9 +46,6 @@ public class ExportState {
     }
 
     public byte[] export() throws IOException {
-        // TODO study java concurrency and replace
-        while (!this.isFinished()) {
-        }
         return Files.readAllBytes(file.toPath());
     }
 
