@@ -154,7 +154,7 @@ public class JobExecutionController {
         Lock lock = new ReentrantLock();
         try {
             while (!exportState.isFinished()) {
-                lock.lock();  // block until condition holds
+                lock.lock();
             }
         } finally {
             lock.unlock();
