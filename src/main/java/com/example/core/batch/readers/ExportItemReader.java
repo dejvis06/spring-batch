@@ -7,19 +7,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemReader;
 
+import java.util.Iterator;
+
 public class ExportItemReader implements ItemReader<Line> {
 
     private static final Logger log = LoggerFactory.getLogger(ExportJobListener.class);
 
-    private final ExportState exportState;
+    private final Iterator<Line> items;
 
-    public ExportItemReader(ExportState exportState) {
-        this.exportState = exportState;
+    public ExportItemReader(Iterator<Line> items) {
+        this.items = items;
     }
 
     public Line read() {
-        if (exportState.getItems().hasNext()) {
-            Line line = exportState.getItems().next();
+        if (items.hasNext()) {
+            Line line = items.next();
             log.info("Read line: {}", line);
             return line;
         }

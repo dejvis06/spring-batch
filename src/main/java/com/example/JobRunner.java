@@ -72,7 +72,7 @@ public class JobRunner implements ApplicationRunner {
                 .repository(jobRepository)
                 .transactionManager((PlatformTransactionManager) transactionManager)
                 .<Line, Line>chunk(1)
-                .reader(new ExportItemReader(exportState))
+                .reader(new ExportItemReader(exportState.getItems()))
                 .processor(new ExportItemProcessor())
                 .writer(new ExportItemWritter(exportState.getCsvWriter()))
                 .build();
