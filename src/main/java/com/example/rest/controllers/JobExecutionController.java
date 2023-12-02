@@ -37,7 +37,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionManager;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
@@ -139,12 +138,22 @@ public class JobExecutionController {
         jobLauncher.run(job, jobParameters);
 
         // TODO study java concurrency and replace
-        while (!exportState.isFinished()) {
+        Lock lock = new ReentrantLock();
+        boolean locked = false;
+        try {
+            while (!exportState.isFinished()) {
+                if (!locked) {
+                    lock.lock();
+                    locked = true;
+                }
+            }
+        } finally {
+            lock.unlock();
         }
         return exportState.export();
     }
 
-    private Job configureJob(ExportState exportState) throws IOException {
+    private Job configureJob(ExportState exportState) {
         Step step = new StepBuilder("taxon_download_step")
                 .repository(jobRepository)
                 .transactionManager((PlatformTransactionManager) transactionManager)

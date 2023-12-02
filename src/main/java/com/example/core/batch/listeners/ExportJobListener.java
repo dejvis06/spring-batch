@@ -11,11 +11,9 @@ import java.io.IOException;
 public class ExportJobListener implements JobExecutionListener {
 
     private static final Logger log = LoggerFactory.getLogger(ExportJobListener.class);
-    private static final String CSV_FILE_PATH
-            = "./result.csv";
     private final ExportState exportState;
 
-    public ExportJobListener(ExportState exportState) throws IOException {
+    public ExportJobListener(ExportState exportState) {
         this.exportState = exportState;
     }
 
